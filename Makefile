@@ -37,6 +37,7 @@ clean:
 	rm -fr vendor
 	rm -fr cover.out
 	rm -fr build/_output
+	rm -fr go.sum
 
 unittest: setup fmt vet-v1
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
