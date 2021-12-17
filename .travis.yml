@@ -25,7 +25,7 @@ jobs:
       script:
       - export DHEALTHREPO=$DOCKER_NAMESPACE/ecds-platform-dev
       - export VERSION=v0.1.23
-      - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/_output/bin/ecds-platform -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} -tags=v1 ./cmd/fsb/...
+      - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/_output/bin/ecds-platform -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} -tags=v1 ./cmd/platform/...
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - docker build -t $DHEALTHREPO:$VERSION -f build/Dockerfile.ecds-platform .
       - docker tag $DHEALTHREPO:$VERSION $DHEALTHREPO:latest
