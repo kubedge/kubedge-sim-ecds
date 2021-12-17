@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-VERSION_V1                  ?= 0.1.19
+VERSION_V1                  ?= 0.1.23
 IMG_BUSINESSLOGIC_DEV       ?= hack4easy/ecds-businesslogic-dev:v${VERSION_V1}
 IMG_ENRICHMENT_DEV          ?= hack4easy/ecds-enrichment-dev:v${VERSION_V1}
 IMG_FRONTEND_DEV            ?= hack4easy/ecds-frontend-dev:v${VERSION_V1}
