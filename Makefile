@@ -25,6 +25,23 @@ IMG_FRONTEND_ARM32V7        ?= hack4easy/ecds-frontend-arm32v7:v${VERSION_V1}
 IMG_LOADBALANCER_ARM32V7    ?= hack4easy/ecds-loadbalancer-arm32v7:v${VERSION_V1}
 IMG_PLATFORM_ARM32V7        ?= hack4easy/ecds-platform-arm32v7:v${VERSION_V1}
 
+IMG_BUSINESSLOGIC           ?= hack4easy/ecds-businesslogic:v${VERSION_V1}
+IMG_ENRICHMENT              ?= hack4easy/ecds-enrichment:v${VERSION_V1}
+IMG_FRONTEND                ?= hack4easy/ecds-frontend:v${VERSION_V1}
+IMG_LOADBALANCER            ?= hack4easy/ecds-loadbalancer:v${VERSION_V1}
+IMG_PLATFORM                ?= hack4easy/ecds-platform:v${VERSION_V1}
+
+# CONTAINER_TOOL defines the container tool to be used for building images.
+# Be aware that the target commands are only tested with Docker which is
+# scaffolded by default. However, you might want to replace it to use other
+# tools. (i.e. podman)
+CONTAINER_TOOL ?= docker
+
+# Setting SHELL to bash allows bash commands to be executed by recipes.
+# Options are set to exit when a recipe line exits non-zero or a piped command fails.
+SHELL = /usr/bin/env bash -o pipefail
+.SHELLFLAGS = -ec
+
 all: docker-build
 
 setup:
@@ -192,6 +209,58 @@ docker-build-platform-arm64v8:
 docker-push-platform-arm64v8:
 	docker push ${IMG_PLATFORM_ARM64V8}
 
+PLATFORMS ?= linux/arm64,linux/amd64,linux/arm/v7
+.PHONY: docker-businesslogic-buildx
+docker-businesslogic-buildx: ## Build and push docker image for the manager for cross-platform support
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.businesslogic.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/Dockerfile.ecds-businesslogic.buildkit > Dockerfile.businesslogic.cross
+	- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+	$(CONTAINER_TOOL) buildx use project-v3-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG_BUSINESSLOGIC} -f Dockerfile.businesslogic.cross .
+	- $(CONTAINER_TOOL) buildx rm project-v3-builder
+	rm Dockerfile.businesslogic.cross
+
+.PHONY: docker-loadbalancer-buildx
+docker-loadbalancer-buildx: ## Build and push docker image for the manager for cross-platform support
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.loadbalancer.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/Dockerfile.ecds-loadbalancer.buildkit > Dockerfile.loadbalancer.cross
+	- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+	$(CONTAINER_TOOL) buildx use project-v3-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG_LOADBALANCER} -f Dockerfile.loadbalancer.cross .
+	- $(CONTAINER_TOOL) buildx rm project-v3-builder
+	rm Dockerfile.loadbalancer.cross
+
+.PHONY: docker-frontend-buildx
+docker-frontend-buildx: ## Build and push docker image for the manager for cross-platform support
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.frontend.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/Dockerfile.ecds-frontend.buildkit > Dockerfile.frontend.cross
+	- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+	$(CONTAINER_TOOL) buildx use project-v3-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG_FRONTEND} -f Dockerfile.frontend.cross .
+	- $(CONTAINER_TOOL) buildx rm project-v3-builder
+	rm Dockerfile.frontend.cross
+
+.PHONY: docker-enrichment-buildx
+docker-enrichment-buildx: ## Build and push docker image for the manager for cross-platform support
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.enrichment.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/Dockerfile.ecds-enrichment.buildkit > Dockerfile.enrichment.cross
+	- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+	$(CONTAINER_TOOL) buildx use project-v3-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG_ENRICHMENT} -f Dockerfile.enrichment.cross .
+	- $(CONTAINER_TOOL) buildx rm project-v3-builder
+	rm Dockerfile.enrichment.cross
+
+.PHONY: docker-platform-buildx
+docker-platform-buildx: ## Build and push docker image for the manager for cross-platform support
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.platform.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' build/Dockerfile.ecds-platform.buildkit > Dockerfile.platform.cross
+	- $(CONTAINER_TOOL) buildx create --name project-v3-builder
+	$(CONTAINER_TOOL) buildx use project-v3-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG_PLATFORM} -f Dockerfile.platform.cross .
+	- $(CONTAINER_TOOL) buildx rm project-v3-builder
+	rm Dockerfile.platform.cross
+
+
 # Build the docker image
 docker-build-dev: docker-build-businesslogic-dev docker-build-enrichment-dev docker-build-frontend-dev docker-build-loadbalancer-dev docker-build-platform-dev
 docker-build-amd64: docker-build-businesslogic-amd64 docker-build-enrichment-amd64 docker-build-frontend-amd64 docker-build-loadbalancer-amd64 docker-build-platform-amd64
@@ -200,6 +269,7 @@ docker-build-arm64v8: docker-build-businesslogic-arm64v8 docker-build-enrichment
 
 docker-build: fmt vet docker-build-dev docker-build-amd64 docker-build-arm32v7 docker-build-arm64v8
 
+
 # Push the docker image
 docker-push-dev: docker-push-businesslogic-dev docker-push-enrichment-dev docker-push-frontend-dev docker-push-loadbalancer-dev docker-push-platform-dev
 docker-push-amd64: docker-push-businesslogic-amd64 docker-push-enrichment-amd64 docker-push-frontend-amd64 docker-push-loadbalancer-amd64 docker-push-platform-amd64
@@ -207,3 +277,6 @@ docker-push-arm32v7: docker-push-businesslogic-arm32v7 docker-push-enrichment-ar
 docker-push-arm64v8: docker-push-businesslogic-arm64v8 docker-push-enrichment-arm64v8 docker-push-frontend-arm64v8 docker-push-loadbalancer-arm64v8 docker-push-platform-arm64v8
 
 docker-push: docker-push-dev docker-push-amd64 docker-push-arm32v7 docker-push-arm64v8
+
+# Cross compilation
+docker-buildx: fmt vet docker-businesslogic-buildx docker-loadbalancer-buildx docker-frontend-buildx docker-enrichment-buildx docker-platform-buildx
