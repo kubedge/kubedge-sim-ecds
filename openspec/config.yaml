@@ -26,7 +26,12 @@ context: |
 
   FASTEST PATH TO A WORKING SIM (compile → images):
     1. realign-to-kubesim-base → go get config/connected/grpc-go @v0.1.25; go mod tidy; go build ./... green.
-    2. go-version-bump → raise go (the .buildkit Dockerfiles use golang:1.23; align the go directive).
+       (kubesim_base v0.1.25 was cut with go 1.26 — this repo must be on go >= 1.26 to consume it.)
+    2. go-version-bump → raise go directive 1.20 → **1.26** (FLEET-CONSISTENT: operators + kubesim_base all
+       went to 1.26; do NOT pick 1.23). Also bump the .buildkit Dockerfiles' builder golang:1.23 → golang:1.26.
+       CRITICAL COUPLING: the class-M ci.yml ships golangci-lint v1.61.0 (action@v6), which CANNOT lint a
+       go 1.26 module ("go version used to build golangci-lint is lower than targeted") — bump the CI job to
+       golangci-lint **v2.12.2** + **golangci-lint-action@v8**. Raising go without this = red CI.
     3. buildx-multiarch-components → colima start; per component
        `docker buildx build --platform linux/arm64,linux/amd64 -f build/Dockerfile.ecds-<component>.buildkit
         -t hack4easy/ecds-<component>:v${VERSION} --push .`; drop arch suffixes; VERSION_V1→VERSION.
