@@ -1,28 +1,43 @@
 schema: spec-driven
 
 context: |
-  Role: CONSUMER in the kubedge SIMULATOR family — the ECDS simulator. Plain Go app
-  (LIGHT on Kubernetes; it does not talk to the API server). It builds five component
-  binaries under cmd/: platform, frontend, enrichment, businesslogic, loadbalancer.
+  Role: CONSUMER in the kubedge SIMULATOR family — the ECDS simulator, and the FIRST
+  kubesim_base customer to bring fully working. Plain Go app (LIGHT on Kubernetes; it does
+  not talk to the API server). Builds five component binaries under cmd/: platform,
+  frontend, enrichment, businesslogic, loadbalancer (each with a build tag `-tags=<component>`).
 
-  Two dependency directions (Notes 15–16):
+  Two dependency directions (Notes 15-16):
     - Compile-time (go.mod): consumes github.com/kubedge/kubesim_base sub-modules
-      config + connected + grpc/go, CURRENT pin v0.1.24 (realign to the next sim-base tag).
-    - Runtime/deploy: this repo's components are DEPLOYED BY kubedge-operator-ecds. The
-      operator's ECDSCluster CRD spec fields (Platforms/FrontEnds/Enrichments/
-      BusinessLogics/LoadBalancers) map 1:1 to these five cmd/* components. Images:
-      hack4easy/ecds-<component>:v<VERSION>. operator-ecds ⟷ sim-ecds are a matched pair.
+      config + connected + grpc/go. CURRENT pin v0.1.24 → REALIGN to **v0.1.25** (kubesim_base
+      cut the v0.1.25 multi-module tag: config/connected/grpc/go all at v0.1.25).
+    - Runtime/deploy: these five components are DEPLOYED BY kubedge-operator-ecds. Its
+      ECDSCluster CR fields (Platforms/FrontEnds/Enrichments/BusinessLogics/LoadBalancers)
+      reference these images: hack4easy/ecds-<component>:v<VERSION>. Keep the image names in
+      sync with what operator-ecds's example CR expects.
 
   Build / images:
-    - The Makefile builds one image per component (currently arch-suffixed:
-      IMG_<COMPONENT>_{DEV,AMD64,ARM64V8,ARM32V7}). MODERNIZE to buildx multi-arch:
-      one hack4easy/ecds-<component>:<tag> per component (arm64 primary — Apple-Silicon
-      dev + Pi armv8), dropping the arch suffixes; that also collapses the operator's
-      per-arch example CRs into one arch-independent CR.
-    - go currently 1.20.
-    - Tag scheme plain v<VERSION> (image/CR level), coupled with the paired operator.
+    - go currently 1.20. Images currently arch-suffixed (IMG_<C>_{DEV,AMD64,ARM64V8,ARM32V7},
+      VERSION_V1=0.2.24) with a 25-Dockerfile per-arch explosion. MODERNIZE to buildx.
+    - GOOD NEWS: multi-stage, TARGETARCH-aware, distroless Dockerfiles ALREADY EXIST at
+      build/Dockerfile.ecds-<component>.buildkit — promote those; don't write new ones.
+    - Per Note 18: buildx is the sole go-forward path; **comment out (retire, don't delete)**
+      the plain + per-arch Dockerfiles, the arch-suffixed IMG_* vars, and the per-arch
+      docker-build targets — marked `# RETIRED: superseded by docker-buildx`.
+
+  FASTEST PATH TO A WORKING SIM (compile → images):
+    1. realign-to-kubesim-base → go get config/connected/grpc-go @v0.1.25; go mod tidy; go build ./... green.
+    2. go-version-bump → raise go (the .buildkit Dockerfiles use golang:1.23; align the go directive).
+    3. buildx-multiarch-components → colima start; per component
+       `docker buildx build --platform linux/arm64,linux/amd64 -f build/Dockerfile.ecds-<component>.buildkit
+        -t hack4easy/ecds-<component>:v${VERSION} --push .`; drop arch suffixes; VERSION_V1→VERSION.
+    4. coordinate: update operator-ecds's example CR image refs to the arch-independent
+       hack4easy/ecds-<component>:v<ver> — then operator-ecds can deploy this sim.
+    5. then: adopt-go-ci, test-coverage.
+
+  Components: platform, frontend, enrichment, businesslogic, loadbalancer (cmd/<component>/main.go,
+  build tag -tags=<component>). Image base: hack4easy/ecds-<component>.
 
 rules:
   spec:
     - Describe CURRENT behavior; do not spec aspirational features.
-    - When behavior depends on the sim base or the paired operator, name it.
+    - Keep image names in sync with the paired operator-ecds CR.

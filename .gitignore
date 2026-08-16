@@ -31,3 +31,6 @@ go.work
 .DS_Store
 .DS_Store
 .DS_Store
+
+# claude-meta session-local scratch
+.local/
