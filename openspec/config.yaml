@@ -1,20 +1,28 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Role: CONSUMER in the kubedge SIMULATOR family — the ECDS simulator. Plain Go app
+  (LIGHT on Kubernetes; it does not talk to the API server). It builds five component
+  binaries under cmd/: platform, frontend, enrichment, businesslogic, loadbalancer.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Two dependency directions (Notes 15–16):
+    - Compile-time (go.mod): consumes github.com/kubedge/kubesim_base sub-modules
+      config + connected + grpc/go, CURRENT pin v0.1.24 (realign to the next sim-base tag).
+    - Runtime/deploy: this repo's components are DEPLOYED BY kubedge-operator-ecds. The
+      operator's ECDSCluster CRD spec fields (Platforms/FrontEnds/Enrichments/
+      BusinessLogics/LoadBalancers) map 1:1 to these five cmd/* components. Images:
+      hack4easy/ecds-<component>:v<VERSION>. operator-ecds ⟷ sim-ecds are a matched pair.
+
+  Build / images:
+    - The Makefile builds one image per component (currently arch-suffixed:
+      IMG_<COMPONENT>_{DEV,AMD64,ARM64V8,ARM32V7}). MODERNIZE to buildx multi-arch:
+      one hack4easy/ecds-<component>:<tag> per component (arm64 primary — Apple-Silicon
+      dev + Pi armv8), dropping the arch suffixes; that also collapses the operator's
+      per-arch example CRs into one arch-independent CR.
+    - go currently 1.20.
+    - Tag scheme plain v<VERSION> (image/CR level), coupled with the paired operator.
+
+rules:
+  spec:
+    - Describe CURRENT behavior; do not spec aspirational features.
+    - When behavior depends on the sim base or the paired operator, name it.
