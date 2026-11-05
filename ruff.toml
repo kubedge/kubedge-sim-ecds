@@ -1,0 +1,5 @@
+# The Python under these paths is delivered by claude-meta and runs under
+# `uv run --script` (requires-python >=3.14); it is never edited here, so the
+# project's linters skip it. ruff-pre-commit passes --force-exclude, so this
+# holds for files pre-commit names too.
+extend-exclude = [".agents/", "plugins/", ".claude/", "bin/*.py"]
